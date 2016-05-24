@@ -181,10 +181,7 @@ def vancouver_iteration(user_variances, submissions, ground_truths=None):
     grade_estimates = get_grade_estimates(user_variances, submission_variances, submissions, ground_truths)
     graders = convert_submissions_to_graders(submissions)
     user_variances = get_user_variance_estimates(submission_variances, grade_estimates, graders)
-
-    #submissions = convert_graders_to_submissions(graders) # this is where it's broken
-
-    return submission_variances, grade_estimates, user_variances, submissions
+    return submission_variances, grade_estimates, user_variances
 
 
 def backtrace(d: dict, v: int):
@@ -235,12 +232,13 @@ def run_vancouver(submissions, ground_truths=None, default_grader_variance=1.0):
     # initialize dummy user variances dictionary
     graders = convert_submissions_to_graders(submissions)
     grader_variances = {grader_id : default_grader_variance for grader_id in graders}
-    for i in range(100):
-        submission_variances, grade_estimates, grader_variances, submissions =\
+
+    for i in range(10):
+        submission_variances, grade_estimates, grader_variances =\
             vancouver_iteration(grader_variances, submissions, ground_truths)
     return submissions, grade_estimates, submission_variances, grader_variances
 
 
-submissions, grade_estimates, submission_variances, grader_variances = run_vancouver(test_submissions)
-print_submissions(submissions, grade_estimates, submission_variances)
-print_graders(convert_submissions_to_graders(submissions), grader_variances)
+s, ge, sv, gv = run_vancouver(test_submissions)
+print_submissions(s, ge, sv)
+print_graders(convert_submissions_to_graders(s), gv)
