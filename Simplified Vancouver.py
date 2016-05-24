@@ -7,354 +7,239 @@ Creation Date:  12 May 2016
 This algorithm was developed by Jason Hartline, Samuel Taggart, and Doug Downey at Northwestern University as part of
 a research project in the field of peer grading algorithms. It represents a simplified version of the Vancouver
 algorithm and is hypothesized by the above to output comparable results.
+
+This file is a complete re-write of the original.
 """
-import csv
-
-import numpy as np
-
-'''
-This global variable represents the maximum score for each assignment (or rather, each pseudo-assignment).
-It is used internally for sanity checking, to make sure Vancouver never estimates a grade for an assignment
-that is higher than the maximum possible grade for that assignment. I have assumed for the sake of simplicity that all
-categories on the rubric will be worth an equal number of points.
-'''
-MAX_GRADE = 2
-
-'''
-These global variables are used for initialization of Vancouver. They are included here for convenience of modification.
-'''
-DEFAULT_GRADER_VARIANCE = 1.0
-DEFAULT_SUBMISSION_GRADE = 1.0
-DEFAULT_SUBMISSION_VARIANCE = 1.0
-
-'''
-This global array is a placeholder for the eventual data, which should be declared as a global numpy array.
-grades[i, j] represents the grade assigned by grader i to submission j, and should be NOT_GRADED_VALUE if no such
-grade exists.
-
-grades_path is the path to the csv file containing the grades. The required format for each line of the csv is:
-grader_id, submission_id, score
-'''
-grades = np.array([[-1]])
-grades_path = "Peer Review Data Sheet - Truncated.csv"
-NOT_GRADED_VALUE = -1
-
-'''
-This global array is a placeholder for insertion of TA grades. They should be inserted in the same order as the grades,
-with -1 flagging that there is no TA grade for this assignment. USE_GROUND_TRUTH toggles whether this data is
-included. DEFAULT_GROUND_TRUTH_VALUE is a flag value which indicates that ground truth has not been set for a given
-submission, either because it was not graded by a TA or because USE_GROUND_TRUTH was set to false. If USE_GROUND_TRUTH
-is set to false, all ground_truth values for submissions will be set to DEFAULT_GROUND_TRUTH_VALUE; the program relies
-on this internally.
-'''
-truths_path = "Processed_TA_groundtruth.csv"
-USE_GROUND_TRUTH = False
-DEFAULT_GROUND_TRUTH_VALUE = -1
-ground_truths = []
-
-'''
-These two global arrays are both working variables for Vancouver and the method by which it outputs results.
-Once Vancouver has finished running, the data in them should be accurate.
-'''
-graders = []
-submissions = []
-
-'''
-These two dictionaries map the submission and grader ID numbers to the indices used internally by the program
-for the grades and ground_truths arrays. They should be consulted to convert between these two representations.
-The mapping is one-to-one, and there is a function below called backtrace which takes the index and returns
-the grader or submission ID.
-'''
-grader_dict = {}
-submission_dict = {}
-
-EPSILON = 0.1
 
 
-def parse_data():
+def read_peer_grades(filename):
     """
-    Initializes working variables for the Vancouver algorithm by reading in data from the grades array and the
-    ground_truths array.
+    Reads in the peer grades and returns them in submissions-have-graders format.
+
+    :param filename: a string pointing to the file to read in from
+    :return: a dictionary from submission_id (string) to submission, where a submission is a dictionary from
+    grader_id (string) to grader_grade (float)
     """
-    for i in range(grades.shape[0]):
-        graders.append(Grader(i))
-    for j in range(grades.shape[1]):
-        submissions.append(Submission(j))
-    for i in range(grades.shape[0]):
-        for j in range(grades.shape[1]):
-            if grades[i, j] != -1:
-                graders[i].submission_indices.append(j)
-                submissions[j].grader_indices.append(i)
-    if USE_GROUND_TRUTH:
-        for i in range(len(submissions)):
-            submissions[i].ground_truth = ground_truths[i]
+    with open(filename) as grades_reader:
+        peer_grades = {submission_id : {grader_id : grader_grade} for
+                       submission_id, grader_id, grader_grade in grades_reader}
+    return peer_grades
 
 
-def parse_truth():
+def read_ground_truth(filename):
     """
-    This function reads in the ground_truths array from a CSV of the format:
-    submission_id, grade
-    :return:
+    Reads in the ground truths and returns them.
+
+    :param filename: a string pointing to the file to read in from
+    :return: a dictionary from submission_id (string) to ground_truth_grade (float)
     """
-    with open(truths_path, newline='') as csv_file:
-        global ground_truths
-        global submissions
-        while len(ground_truths) < grades.shape[1]:
-            ground_truths.append(DEFAULT_GROUND_TRUTH_VALUE)
-        truths_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        for row in truths_reader:
-            submission_id = row[0]
-            submission_index = submission_dict[submission_id]
-            submission_grade = float(row[1])
-            ground_truths[submission_index] = submission_grade
+    with open(filename) as truth_reader:
+        ground_truth = {submission_id : true_grade for
+                        submission_id, true_grade in truth_reader}
+    return ground_truth
 
 
-def parse_peer_grades():
-    """
-    This function reads in the grades array from a CSV of the format:
-    grader_id, submission_id, grade
-    """
-    with open(grades_path, newline='') as csv_file:
-        global grades
-        grade_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        i = 1
-        j = 1
-        for row in grade_reader:
-            grader = row[0]
-            submission = row[1]
-            score = row[2]
-            if grader not in grader_dict:
-                grader_dict[grader] = i - 1
-                i += 1
-                grader_row = np.zeros(j)
-                for k in range(len(grader_row)):
-                    grader_row[k] = NOT_GRADED_VALUE
-                grades = np.append(grades, [grader_row], axis=0)
-            if submission not in submission_dict:
-                submission_dict[submission] = j - 1
-                j += 1
-                submission_row = np.zeros(i)
-                for k in range(len(submission_row)):
-                    submission_row[k] = NOT_GRADED_VALUE
-                grades = np.append(grades, np.rot90([submission_row]), axis=1)
-            grades[grader_dict[grader] + 1][submission_dict[submission] + 1] = float(score)
-    grades = grades[1:, 1:]
-
-
-class Submission:
-    def __init__(self, index: int, grade: float = DEFAULT_SUBMISSION_GRADE,
-                 variance: float = DEFAULT_SUBMISSION_VARIANCE,
-                 ground_truth: float = DEFAULT_GROUND_TRUTH_VALUE):
-        """
-        Create a new submission.
-        :type grade: float
-        :type variance: float
-        :type ground_truth: float
-        """
-        self.ground_truth = ground_truth
-
-        self.grade = None
-        self.set_grade(grade)
-
-        self.variance = None
-        self.set_variance(variance)
-
-        self.grader_indices = []
-
-        self.index = index
-
-    def __str__(self):
-        sub_id = backtrace(submission_dict, self.index)
-        return "Submission: " + sub_id + "\n" + "Grade: " + str(self.grade) + \
-               "\n" + "Variance: " + str(self.variance) + "\n" + "Ground Truth: " + str(self.ground_truth) + "\n"
-
-    def set_grade(self, grade: float):
-        """
-        A wrapper for setting the grade of a submission, designed to catch incorrect values.
-        :type grade: float
-        """
-        assert isinstance(grade, float), "Grade must be a float."
-        assert grade <= MAX_GRADE, "Cannot set submission grade to more than the maximum possible points."
-        assert grade >= 0, "Cannot set submission grade to less than zero."
-        self.grade = grade
-
-        '''
-        This check ensures that no matter where the grade is set, it will be reverted immediately to ground truth,
-        ensuring that the ground truth value is the only one which will ever appear outside of this function. The
-        ground truth value is always initialized to DEFAULT_GROUND_TRUTH_VALUE even if USE_GROUND_TRUTH is false, so
-        if it is still equivalent to that, it has never been set and should not be used.
-        '''
-        #if self.ground_truth != DEFAULT_GROUND_TRUTH_VALUE:
-            #self.grade = self.ground_truth
-
-    def set_variance(self, variance: float):
-        """
-        A wrapper for setting the variance of a submission, designed to catch incorrect values.
-        :type variance: float
-        """
-        assert isinstance(variance, float), "Variance must be a float."
-        assert variance >= 0
-        self.variance = variance
-
-
-class Grader:
-    def __init__(self, index: int, variance: float = DEFAULT_GRADER_VARIANCE):
-        """
-        Create a new grader.
-        :type variance: float
-        """
-        self.variance = None
-        self.set_variance(variance)
-        self.submission_indices = []
-        self.index = index
-
-    def set_variance(self, variance: float = 1):
-        """
-        A wrapper for setting the variance of a grader, designed to catch incorrect values.
-        :type variance: float
-        """
-        assert isinstance(variance, float), "Variance must be a float."
-        assert variance >= 0
-        self.variance = variance
-
-
-def invert(k: float):
+def reciprocal(k: float):
     if k == 0:
         return 1.0 / (k + 0.01)
     else:
         return 1.0 / k
 
-def update_submission_variance_estimates():
-    for j in range(len(submissions)):
-        variance = 0
-        for i in submissions[j].grader_indices:
-            variance += invert(graders[i].variance)
-        variance = invert(variance)
-        submissions[j].set_variance(variance)
-    return True
 
-
-def update_grade_estimates():
-    for j in range(len(submissions)):
-        grade = 0
-        for i in submissions[j].grader_indices:
-            grade += (grades[i, j] * invert(graders[i].variance))
-        grade *= submissions[j].variance
-        submissions[j].set_grade(grade)
-    return True
-
-
-def update_user_variance_estimates():
-    for i in range(len(graders)):
-        part_a = 0
-        for j in graders[i].submission_indices:
-            part_a += invert(submissions[j].variance)
-        part_a = invert(part_a)
-        part_b = 0
-        for j in graders[i].submission_indices:
-            part1 = invert(submissions[j].variance)
-            part2 = (grades[i, j] - submissions[j].grade) ** 2
-            part_b += (part1 * part2)
-        graders[i].set_variance(part_a * part_b)
-    return True
-
-
-'''
-def update_submission_variance():
+def get_submission_variances(user_variances, submissions):
     """
-    Helper function for Vancouver which updates estimates of submission variances.
-    :return: a boolean indicating whether there has been an update
+    Returns the submission variances, given user variances and submissions, where submissions are represented as
+    dictionaries of the format grader:grade.
+
+    :param user_variances: a dictionary from user_id (string) to user_variance (float)
+    :param submissions: a dictionary from submission_id (string) to submission, where a submission is a dictionary from
+    user_id (string) to user_grade (float)
+    :return: a dictionary from submission_id (string) to submission_variance (float)
     """
-    updated = False
-    for j in range(len(submissions)):
-        variance = 0.0
-        for i in submissions[j].grader_indices:
-            variance += invert(graders[i].variance)
-        variance = invert(variance)
-        if abs(variance - submissions[j].variance) > EPSILON:
-            updated = True
-        submissions[j].set_variance(variance)
-    return updated
+    submission_variance_estimates = {}
+    for submission_id in submissions.keys:
+        submission = submissions[submission_id]
+        grader_ids = submission.keys
+        submission_variance_estimate = 0
+        for grader_id in grader_ids:
+            grader_variance = user_variances[grader_id]
+            submission_variance_estimate += reciprocal(grader_variance)
+        submission_variance_estimate = reciprocal(submission_variance_estimate)
+        submission_variance_estimates[submission_id] = submission_variance_estimate
+    return submission_variance_estimates
 
 
-def update_grade_estimates():
+def get_grade_estimates(user_variances, submission_variances, submissions, ground_truths=None):
     """
-    Helper function for Vancouver which updates estimates of submission grades.
-    :return: a boolean indicating whether there has been an update
+    Returns the grade estimates, given user variances, submission variances, and submissions represented as
+    dictionaries of the format grader:grade.
+
+    :param user_variances: a dictionary from user_id (string) to user_variance (float)
+    :param submission_variances: a dictionary from submission_id (string) to submission_variance (float)
+    :param submissions: a dictionary from submission_id (string) to submission, where a submission is a dictionary from
+    user_id (string) to user_grade (float)
+    :param ground_truths: optional dictionary from submission_id (string) to ground_truth_grade (float). Will be used
+    if present to force submission grades to the ground truth values.
+    :return: a dictionary from submission_id (string) to submission_grade_estimate (float)
     """
-    updated = False
-    for j in range(len(submissions)):
-        assert isinstance(submissions[j], Submission)
-        grade = 0
-        for i in submissions[j].grader_indices:
-            assert isinstance(graders[i], Grader)
-            grade += invert(graders[i].variance) * grades[i, j]
-        grade *= submissions[j].variance
-        if abs(grade - submissions[j].grade) > EPSILON:
-            updated = True
-        submissions[j].set_grade(grade)
-    return updated
+    grade_estimates = {}
+    for submission_id in submissions.keys:
+        if ground_truths is not None and submission_id in ground_truths.keys:
+            grade_estimates[submission_id] = ground_truths[submission_id]
+            continue
+        submission = submissions[submission_id]
+        grader_ids = submission.keys
+        grade_estimate = 0
+        for grader_id in grader_ids:
+            grader_variance = user_variances[grader_id]
+            grader_grade = submission[grader_id]
+            grade_estimate += reciprocal(grader_variance) * grader_grade
+        grade_estimate *= submission_variances[submission_id]
+        grade_estimates[submission_id] = grade_estimate
+    return grade_estimates
 
 
-def update_grader_variance():
+def get_user_variance_estimates(submission_variances, grade_estimates, graders):
     """
-    Helper function for Vancouver which updates estimates of grader variances.
-    :return: a boolean indicating whether there has been an update
-    """
-    updated = False
-    for i in range(len(graders)):
-        sum1 = 0
-        sum2 = 0
-        for j in graders[i].submission_indices:
-            sum1 += invert(submissions[j].variance)
-            sum2 += invert(submissions[j].variance) * (grades[i, j] - submissions[j].grade) ** 2
-        sum1 = invert(sum1)
-        variance = sum1 * sum2
-        if abs(variance - graders[i].variance) > EPSILON:
-            updated = True
-        graders[i].set_variance(variance)
-    return updated
-'''
+    Returns the user variance estimates, given submission variances, grade estimates, and graders represented as
+    dictionaries of the format submission:grade.
 
-def backtrace(d: dict, value: int):
+    :param submission_variances: a dictionary from submission_id (string) to submission_variance (float)
+    :param grade_estimates: a dictionary from submission_id (string) to submission_grade_estimate (float)
+    :param graders: a dictionary from grader_id (string) to grader, where a grader is a dictionary from
+    submission_id (string) to submission_grade (float)
+    :return: a dictionary from user_id (string) to user_variance (float)
     """
-    Runs backwards through the dictionary, searching for the key which maps to the input value.
-    :return the key whose dictionary entry is value
+    user_variances = {}
+    for grader_id in graders.keys:
+        grader = graders[grader_id]
+        submission_ids = grader.keys
+        acc_1 = 0
+        for submission_id in submission_ids:
+            submission_variance = submission_variances[submission_id]
+            acc_1 += reciprocal(submission_variance)
+        acc_1 = reciprocal(acc_1)
+        acc_2 = 0
+        for submission_id in submission_ids:
+            submission_variance = submission_variances[submission_id]
+            grader_grade = grader[submission_id]
+            grade_estimate = grade_estimates[submission_id]
+            grade_difference = grader_grade - grade_estimate
+            acc_2 += reciprocal(submission_variance) * (grade_difference ** 2)
+        user_variances[grader_id] = acc_1 * acc_2
+    return user_variances
+
+
+def convert_submissions_to_graders(submissions):
+    """
+    Converts between the submissions-have-graders and graders-have-submissions forms of representing the peer grades.
+
+    :param submissions: a dictionary from submission_id to submission, where a submission is a dictionary from
+    grader_id (string) to grader_grade (float)
+    :return: a dictionary from grader_id to grader, where a grader is a dictionary from submission_id (string) to
+    submission_grade (float)
+    """
+    graders = {}
+    for submission_id in submissions.keys:
+        submission = submissions[submission_id]
+        grader_ids = submission.keys
+        for grader_id in grader_ids:
+            graders[grader_id][submission_id] = submissions[submission_id][grader_id]
+    return graders
+
+
+def convert_graders_to_submissions(graders):
+    """
+    Wrappers the convert_submissions_to_graders function, which should rotate the array properly due to symmetry.
+
+    :param graders: a dictionary from grader_id to grader, where a grader is a dictionary from submission_id (string)
+    to submission_grade (float)
+    :return: a dictionary from submission_id to submission, where a submission is a dictionary from grader_id (string)
+    to grader_grade (float)
+    """
+    return convert_submissions_to_graders(graders)
+
+
+def vancouver_iteration(user_variances, submissions, ground_truths=None):
+    """
+    Takes in data from a previous time-step of the Vancouver algorithm (or the initial conditions) and outputs the
+    data for the next iteration or display.
+
+    :param user_variances: a dictionary from user_id (string) to user_variance (float)
+    :param submissions: a dictionary from submission_id (string) to submission, where a submission is a dictionary from
+    grader_id (string) to grader_grade (float)
+    :return: submission_variances, grade_estimates, user_variances, submissions
+    """
+    submission_variances = get_submission_variances(user_variances, submissions)
+    grade_estimates = get_grade_estimates(user_variances, submission_variances, submissions, ground_truths)
+    graders = convert_submissions_to_graders(submissions)
+    user_variances = get_user_variance_estimates(submission_variances, grade_estimates, graders)
+    submissions = convert_graders_to_submissions(graders)
+    return submission_variances, grade_estimates, user_variances, submissions
+
+
+def backtrace(d: dict, v: int):
+    """
+    Searches through the provided dictionary for the key whose value is v.
+
+    :param d: a dictionary to search through
+    :param v: the value to search for
+    :return: a key from the dictionary
     """
     for key in d.keys():
-        if d[key] == value:
+        if d[key] == v:
             return key
     return 'Null'
 
 
-def run_vancouver():
+def print_submissions(submissions, grade_estimates, submission_variances):
     """
-    Runs the Vancouver algorithm, modifying the "submissions" and "graders" global arrays.
-    """
-    parse_data()
-    updated = True
-    i = 0
-    while updated and i < 1:
-        i += 1
-        updated = False
-        updated = updated or update_submission_variance_estimates()
-        updated = updated or update_grade_estimates()
-        updated = updated or update_user_variance_estimates()
-    for submission in submissions:
-        subid = backtrace(submission_dict, submission.index)
-        print(subid)
-        print(submission)
-'''
-    with open('fold3.csv', 'w') as csvfile:
-        foldwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        for submission in submissions:
-            subid = backtrace(submission_dict, submission.index)
-            print(subid)
-            foldwriter.writerow([str(subid), str(submission.grade)])
-            print(submission)
-'''
+    Prints the submissions dictionary in human-readable format.
 
-parse_peer_grades()
-if USE_GROUND_TRUTH:
-    parse_truth()
-run_vancouver()
+    :param submissions: the submissions dictionary {string : {string : float}}
+    :param grade_estimates: the grade_estimates dictionary {string : float}
+    :param submission_variances: the submission_variances dictionary {string : float}
+    :return:
+    """
+    for submission_id in submissions.keys:
+        print("Submission ID: ", submission_id, "\n")
+        print("Submission Grade: ", grade_estimates[submission_id], "\n")
+        print("Submission Variance: ", submission_variances[submission_id], "\n")
+        print("\n")
+
+
+def print_graders(graders, grader_variances):
+    """
+    Prints the graders dictionary in human-readable format.
+
+    :param graders: the graders dictionary {string : {string : float}}
+    :param grader_variances: the grader_variances dictionary {string : float}
+    :return:
+    """
+    for grader_id in graders.keys:
+        print("Grader ID: ", grader_id, "\n")
+        print("Grader Variance: ", grader_variances[grader_id], "\n")
+        print("\n")
+
+
+def run_vancouver(grades_path, truth_path=None, default_grader_variance=1.0):
+    # initialize submissions dictionary
+    submissions = read_peer_grades(grades_path)
+
+    # initialize dummy user variances dictionary
+    graders = convert_submissions_to_graders(submissions)
+    grader_ids = graders.keys
+    grader_variances = {grader_id : default_grader_variance for grader_id in grader_ids}
+
+    # initialize ground_truths dictionary
+    if truth_path != None:
+        ground_truths = read_ground_truth(truth_path)
+    else:
+        ground_truths = None
+
+    for i in range(1000):
+        submission_variances, grade_estimates, grader_variances, submissions =\
+            vancouver_iteration(grader_variances, submissions, ground_truths)
+
+    print_submissions(submissions, grade_estimates, submission_variances)
+    print_graders(convert_submissions_to_graders(submissions), grader_variances)
