@@ -11,6 +11,8 @@ algorithm and is hypothesized by the above to output comparable results.
 This file is a complete re-write of the original.
 """
 
+from simplified_vancouver_tests import *
+
 
 def read_peer_grades(filename):
     """
@@ -57,11 +59,10 @@ def get_submission_variances(user_variances, submissions):
     :return: a dictionary from submission_id (string) to submission_variance (float)
     """
     submission_variance_estimates = {}
-    for submission_id in submissions.keys:
+    for submission_id in submissions:
         submission = submissions[submission_id]
-        grader_ids = submission.keys
         submission_variance_estimate = 0
-        for grader_id in grader_ids:
+        for grader_id in submission:
             grader_variance = user_variances[grader_id]
             submission_variance_estimate += reciprocal(grader_variance)
         submission_variance_estimate = reciprocal(submission_variance_estimate)
@@ -83,14 +84,13 @@ def get_grade_estimates(user_variances, submission_variances, submissions, groun
     :return: a dictionary from submission_id (string) to submission_grade_estimate (float)
     """
     grade_estimates = {}
-    for submission_id in submissions.keys:
-        if ground_truths is not None and submission_id in ground_truths.keys:
+    for submission_id in submissions:
+        if ground_truths is not None and submission_id in ground_truths:
             grade_estimates[submission_id] = ground_truths[submission_id]
             continue
         submission = submissions[submission_id]
-        grader_ids = submission.keys
         grade_estimate = 0
-        for grader_id in grader_ids:
+        for grader_id in submission:
             grader_variance = user_variances[grader_id]
             grader_grade = submission[grader_id]
             grade_estimate += reciprocal(grader_variance) * grader_grade
@@ -111,16 +111,15 @@ def get_user_variance_estimates(submission_variances, grade_estimates, graders):
     :return: a dictionary from user_id (string) to user_variance (float)
     """
     user_variances = {}
-    for grader_id in graders.keys:
+    for grader_id in graders:
         grader = graders[grader_id]
-        submission_ids = grader.keys
         acc_1 = 0
-        for submission_id in submission_ids:
+        for submission_id in grader:
             submission_variance = submission_variances[submission_id]
             acc_1 += reciprocal(submission_variance)
         acc_1 = reciprocal(acc_1)
         acc_2 = 0
-        for submission_id in submission_ids:
+        for submission_id in grader:
             submission_variance = submission_variances[submission_id]
             grader_grade = grader[submission_id]
             grade_estimate = grade_estimates[submission_id]
@@ -140,11 +139,12 @@ def convert_submissions_to_graders(submissions):
     submission_grade (float)
     """
     graders = {}
-    for submission_id in submissions.keys:
+    for submission_id in submissions:
         submission = submissions[submission_id]
-        grader_ids = submission.keys
+        grader_ids = submission.keys()
         for grader_id in grader_ids:
-            graders[grader_id][submission_id] = submissions[submission_id][grader_id]
+            grader = {submission_id : submissions[submission_id][grader_id]}
+            graders[grader_id] = grader
     return graders
 
 
@@ -201,7 +201,7 @@ def print_submissions(submissions, grade_estimates, submission_variances):
     :param submission_variances: the submission_variances dictionary {string : float}
     :return:
     """
-    for submission_id in submissions.keys:
+    for submission_id in submissions:
         print("Submission ID: ", submission_id, "\n")
         print("Submission Grade: ", grade_estimates[submission_id], "\n")
         print("Submission Variance: ", submission_variances[submission_id], "\n")
@@ -216,26 +216,17 @@ def print_graders(graders, grader_variances):
     :param grader_variances: the grader_variances dictionary {string : float}
     :return:
     """
-    for grader_id in graders.keys:
+    for grader_id in graders:
         print("Grader ID: ", grader_id, "\n")
         print("Grader Variance: ", grader_variances[grader_id], "\n")
         print("\n")
 
 
-def run_vancouver(grades_path, truth_path=None, default_grader_variance=1.0):
-    # initialize submissions dictionary
-    submissions = read_peer_grades(grades_path)
+def run_vancouver(submissions, ground_truths=None, default_grader_variance=1.0):
 
     # initialize dummy user variances dictionary
     graders = convert_submissions_to_graders(submissions)
-    grader_ids = graders.keys
-    grader_variances = {grader_id : default_grader_variance for grader_id in grader_ids}
-
-    # initialize ground_truths dictionary
-    if truth_path != None:
-        ground_truths = read_ground_truth(truth_path)
-    else:
-        ground_truths = None
+    grader_variances = {grader_id : default_grader_variance for grader_id in graders}
 
     for i in range(1000):
         submission_variances, grade_estimates, grader_variances, submissions =\
@@ -244,4 +235,5 @@ def run_vancouver(grades_path, truth_path=None, default_grader_variance=1.0):
     print_submissions(submissions, grade_estimates, submission_variances)
     print_graders(convert_submissions_to_graders(submissions), grader_variances)
 
-run_vancouver("Simplified Vancouver Tests.py")
+
+run_vancouver(test_submissions)
