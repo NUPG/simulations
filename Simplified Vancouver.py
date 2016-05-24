@@ -243,3 +243,5 @@ def run_vancouver(grades_path, truth_path=None, default_grader_variance=1.0):
 
     print_submissions(submissions, grade_estimates, submission_variances)
     print_graders(convert_submissions_to_graders(submissions), grader_variances)
+
+run_vancouver("Simplified Vancouver Tests.py")
