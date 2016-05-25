@@ -23,7 +23,6 @@ def invert_dictlist_dup(d):
 def peer_assignment(groups, k, debug=False):
     """Given no cover, first generate a cover with the first few submissions"""
     """Then, generate the rest of the assignments"""
-
     for i in range(1000):
         submissions = groups.keys()
 
@@ -163,8 +162,8 @@ def peer_assignment_with_cover(groups, k, cover, debug=False):
 
     # print the cover
     # here one can also output to file, etc.
-    print("Cover: ");
-    print(invert_dictlist_dup(cover));
+    # print("Cover: ");
+    # print(invert_dictlist_dup(cover));
 
     return assignments
 
