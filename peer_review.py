@@ -188,13 +188,17 @@ def check_assignment(groups,assignments):
 
 # generates random reviews for assignments 
 #    (assignments as returned from peer_assignments())
-# can easily be augmented to generate different distributions 
-#
-def random_reviews(assignments):
-   return {i: {j:random.random() for j in js} for (i, js) in assignments.items()} 
+#   qualities: {i => number of draws from distribituion}
+def random_reviews(assignments, qualities = {}):
+    # fill in qualities if empty.
+    # default quality is 1.
+    qs = {i:1 for i in assignments.keys()}
+    qs.update(qualities)
+    
+    return {i: {j: avg([random.random() for _ in range(qs[i])]) for j in js} for (i, js) in assignments.items()} 
 
 
-MIN_VARIANCE = 0.001            # don't let 1/variance blow up if a peer is very accurate.
+Min_VARIANCE = 0.001            # don't let 1/variance blow up if a peer is very accurate.
 DEFAULT_VARIANCE = 1.0          # this does not matter as long as it is the same.
 
 # assign students in groups to k submissions.
