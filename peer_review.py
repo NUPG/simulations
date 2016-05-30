@@ -165,7 +165,7 @@ def peer_assignment_with_cover(groups, k, cover, debug=False):
     # print("Cover: ");
     # print(invert_dictlist_dup(cover));
 
-    return assignments
+    return assignments, invert_dictlist_dup(cover)
 
 
 # make sure nobody is assigned own assignment or duplicates
