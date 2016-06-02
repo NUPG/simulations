@@ -2,3 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
+
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/simulations.iml
+.idea/modules.xml
+.idea/misc.xml
