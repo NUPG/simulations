@@ -19,8 +19,12 @@ def invert_dictlist_dup(d):
     return reverse_d
 
 
-# assign students in groups to k submissions.
+# wrapper for backwards compatibility
 def peer_assignment(groups, k, debug=False):
+    return peer_assignment_return_cover(groups, k, debug)[0]
+
+# assign students in groups to k submissions, and return the assignments and the generated cover
+def peer_assignment_return_cover(groups, k, debug=False):
     """Given no cover, first generate a cover with the first few submissions"""
     """Then, generate the rest of the assignments"""
     for i in range(1000):
@@ -53,13 +57,14 @@ def peer_assignment(groups, k, debug=False):
                     break;
 
         assignments = peer_assignment_with_cover(groups, k, cover);
+
         if (assignments != -1):
             break;
 
     if (assignments == -1) and debug:
         print("Couldn't generate good cover!");
 
-    return assignments;
+    return assignments, invert_dictlist_dup(cover)
 
 
 def peer_assignment_with_cover_submissions(groups, k, coverSubmissions, debug=False):
@@ -165,7 +170,7 @@ def peer_assignment_with_cover(groups, k, cover, debug=False):
     # print("Cover: ");
     # print(invert_dictlist_dup(cover));
 
-    return assignments, invert_dictlist_dup(cover)
+    return assignments
 
 
 # make sure nobody is assigned own assignment or duplicates

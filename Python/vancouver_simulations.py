@@ -11,7 +11,7 @@ def evaluate_vancouver(num_assignments, num_reviews, num_truths, min_quality=1, 
                        vancouver_steps=10):
     # generate random groups, assignments, qualities, and reviews
     groups = {sub: [sub + x for x in ['1', '2', '3']] for sub in [chr(ord('a') + z) for z in range(num_assignments)]}
-    assignments, cover = peer_assignment(groups, num_reviews)
+    assignments, cover = peer_assignment_return_cover(groups, num_reviews)
     true_qualities = {i: random.randint(min_quality, max_quality) for i in assignments}
     reviews = random_reviews(assignments, true_qualities)
 
