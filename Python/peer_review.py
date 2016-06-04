@@ -23,6 +23,7 @@ def invert_dictlist_dup(d):
 def peer_assignment(groups, k, debug=False):
     return peer_assignment_return_cover(groups, k, debug)[0]
 
+
 # assign students in groups to k submissions, and return the assignments and the generated cover
 def peer_assignment_return_cover(groups, k, debug=False):
     """Given no cover, first generate a cover with the first few submissions"""

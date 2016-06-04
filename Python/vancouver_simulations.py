@@ -117,8 +117,8 @@ def plot_stats(stat_type, stat_variable, peer_quality, use_cover=True,
     plt.show()
 
 
-def plot_histogram(num_subs=20, num_grades_per_sub=3, num_truths=5, peer_quality=3, use_cover=True, vancouver_steps=10,
-                   stat_type='Submission Grade Error', num_trials=20, cumulative=True,
+def plot_histogram(num_subs=20, num_grades_per_sub=3, num_truths=5, peer_quality=(random.randint, 1, 5), use_cover=True,
+                   vancouver_steps=10, stat_type='Submission Grade Error', num_trials=20, cumulative=True,
                    grading_algorithm=lambda x: random.choice(x[0])):
     vancouver_bulk = []
     for _ in range(num_trials):
@@ -127,4 +127,32 @@ def plot_histogram(num_subs=20, num_grades_per_sub=3, num_truths=5, peer_quality
                                                  grading_algorithm=grading_algorithm)[stat_ids[stat_type]])
     plt.hist(vancouver_bulk, cumulative=cumulative)
     plt.xlabel(stat_type)
+    plt.show()
+
+
+def plot_cdfs(num_subs=20, num_grades_per_sub=3, num_truths=(5, ), peer_quality=(random.randint, 1, 5), use_cover=True,
+              vancouver_steps=10, stat_type='Submission Grade Error', num_trials=50, cumulative=True,
+              grading_algorithm=lambda x: random.choice(x[0]), resolution=100):
+    for truth_num in num_truths:
+        vancouver_bulk = []
+        for _ in range(num_trials):
+            vancouver_bulk.extend(evaluate_vancouver(num_subs, num_grades_per_sub, truth_num,
+                                                     peer_quality, use_cover, vancouver_steps,
+                                                     grading_algorithm=grading_algorithm)[stat_ids[stat_type]])
+        vancouver_bulk.sort()
+        vmin = vancouver_bulk[0]
+        vmax = vancouver_bulk[-1]
+        step = (vmax - vmin) / resolution
+        hist = []
+        values = []
+        i = 0
+        for value in np.arange(vmin, vmax, step):
+            while vancouver_bulk[i] < value:
+                i += 1
+            hist.append(i)
+            values.append(value)
+        hist_max = hist[-1]
+        hist = [float(item) / hist_max for item in hist]
+        plt.plot(values, hist)
+        plt.legend(num_truths)
     plt.show()
