@@ -130,9 +130,9 @@ def plot_histogram(num_subs=20, num_grades_per_sub=3, num_truths=5, peer_quality
     plt.show()
 
 
-def plot_cdfs(num_subs=20, num_grades_per_sub=3, num_truths=(5, ), peer_quality=(random.randint, 1, 5), use_cover=True,
-              vancouver_steps=10, stat_type='Submission Grade Error', num_trials=50, cumulative=True,
-              grading_algorithm=lambda x: random.choice(x[0]), resolution=100):
+def plot_cdfs(num_subs=20, num_grades_per_sub=3, num_truths=(0, 5, 10, 15), peer_quality=(random.randint, 1, 5),
+              use_cover=True, vancouver_steps=10, stat_type='Submission Grade Error', num_trials=50,
+              grading_algorithm=lambda x: random.choice(x[0]), resolution=100, xrange=[0, 0.4]):
     for truth_num in num_truths:
         vancouver_bulk = []
         for _ in range(num_trials):
@@ -154,5 +154,8 @@ def plot_cdfs(num_subs=20, num_grades_per_sub=3, num_truths=(5, ), peer_quality=
         hist_max = hist[-1]
         hist = [float(item) / hist_max for item in hist]
         plt.plot(values, hist)
-        plt.legend(num_truths)
+    plt.legend(num_truths)
+    plt.xlabel(stat_type)
+    plt.ylabel('Normalized CDF')
+    plt.xlim(xrange)
     plt.show()
