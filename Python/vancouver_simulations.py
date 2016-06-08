@@ -15,9 +15,17 @@ def evaluate_vancouver(num_assignments, num_reviews, num_truths, peer_quality, u
                        grading_algorithm=lambda x: random.choice(x[0])):
     # generate random groups, assignments, qualities, and reviews
     """
-
+    :param num_assignments: the number of submissions in the pool
+    :param num_reviews: the number of submsisions reviewed by each student
+    :param num_truths: the number of submissions to "see" a ground truth grade for
+    :param peer_quality: a tuple of (function, arg_1, ..., arg_n) which will be called once for each grader to determine
+    that grader's true quality. The function should return an integer, which will be used to determine how many samples
+    that grader gets from the distribution (in our current model).
     :param vancouver_steps: the number of iterations before vancouver terminates
     :param peer_quality: tuple of (function, args) that returns an integer
+
+    :return a tuple of three arrays, representing the submission grade errors, submission variance errors, and
+    grader variance errors
     """
     groups = {sub: [sub + x for x in ['1', '2', '3']] for sub in [chr(ord('a') + z) for z in range(num_assignments)]}
     assignments, cover = peer_assignment_return_cover(groups, num_reviews)
