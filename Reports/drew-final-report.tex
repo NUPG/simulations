@@ -20,14 +20,14 @@
 		\item Each student grades three assignments.
 		\item The simulation is run two hundred times and the data aggregated.
 		\item The legend indicates the number of ground-truth grades supplied to the algorithm.
-		\item The default method for choosing ground truth grades is to select them uniformly at random.
-		\item Methods for choosing ground truth grades are applied after the entire cover has been chosen. If the cover is smaller than the number of ground truth grades allowed, the grades used are chosen uniformly at random from those in the cover.
+		\item The default method for choosing which submissions ground truth grades are obtained for is to select them uniformly at random.
+		\item Methods for choosing which submissions ground truth grades are obtained for are applied after ground truth is obtained for the entire planted cover. If the cover is smaller than the number of ground truth grades allowed, the grades used are chosen uniformly at random from those in the cover.
 		\item Peer quality is represented by the number of draws a peer gets from a uniform distribution on the range (0, 1).
-		\item Peer quality is uniformly random on the range [1, 5].
+		\item Peer quality is uniformly random on the set {1, 2, 3, 4, 5}.
 		\item The true value of a submission's grade is always 0.5, the expectation of a uniform distribution on the range (0, 1).
 		\item The grading algorithm used is the Vancouver algorithm, and it is terminated after ten iterations.
 		\item The statistic plotted is the CDF of submission grade error, the quantity abs(submission grade from algorithm - 0.5).
-		\item The default number of ground truths is the tuple (0, 5, 10, 15) and should plot four CDFs per plot.
+		\item The default number of ground truths is the set {0, 5, 10, 15}. All four of these CDFs are shown on each plot by default.
 		\item Each plot runs its own batch of simulations.
 	\end{itemize}
 	
@@ -55,7 +55,7 @@
 	
 
 	\section{Evaluation of Vancouver with Injected Ground Truths}
-	As may be evident from the plots already shown, Vancouver does not appear to perform better with more ground truths; the entirety of the observable increase in performance can be attributed to the direct linear decrease in mean error that results from inserting more true grades. The graph shown is a plot of the expected mean error calculated from 100 trials with the other parameters default. See Figure \ref{fig:vancouver-vs-ground-truth-cover}.
+	Vancouver does not show better than linear decrease in error, which may be attributable partially or entirely to the linear decrease that is expected simply from adding in more ground truth grades. To understand this, consider that the error for a grade that is a ground-truth grade will always be zero. Therefore, as long as the grades which are not obtained from ground truth have some nonzero expected error $k$, adding one more ground truth grade will reduce the expected total error by $k$ and therefore reduce the expected mean error by $k/n$, where $n$ is the total number of submissions. Clearly, this is a linear decrease in mean error. Figure \ref{fig:vancouver-vs-ground-truth-cover} is a plot of the expected mean error calculated from 100 trials with the other parameters default.
 	
 	\begin{figure}[h]
 		\includegraphics{vancouver-vs-ground-truth-cover.png}
@@ -87,7 +87,7 @@
 	
 	
 	\section{Attempts to Find a Distribution for Which Ground Truth Injection is Better than Default}
-	I next attempted to find a distribution for which ground truth injection would be more helpful than it is for the default uniform distribution on the range [1, 5]. Distributions that I tried included bimodal (Figure \ref{fig:vancouver-bimodal}) and skewed both low and high (Figures \ref{fig:vancouver-skewed} and \ref{fig:vancouver-skewed-low}). None of these distributions showed noticeable improvements over the default. It is worth noting for the sake of clarity that minor differences in the overall error are visible here, but this is due to the initial input from the graders being better or worse, since I was changing the distribution of quality of the graders.
+	I next attempted to find a distribution of grader qualities for which ground truth injection would be more helpful than it is for the default uniform distribution of grader qualities on the set {1, 2, 3, 4, 5}. Distributions that I tried included bimodal (Figure \ref{fig:vancouver-bimodal}) and skewed both low and high (Figures \ref{fig:vancouver-skewed} and \ref{fig:vancouver-skewed-low}). None of these distributions showed noticeable improvements over the default. It is worth noting for the sake of clarity that minor differences in the overall error are visible here, but this is due to the initial input from the graders being better or worse, since I was changing the distribution of quality of the graders.
 	
 	\begin{figure}[h]
 		\includegraphics{vancouver-bimodal.png}
@@ -109,7 +109,7 @@
 	
 	
 	\section{Algorithms for Grading Past the Cover}
-	Following the above examination, I looked into changing the algorithm for selecting submissions to provide ground truth grades for once the cover had already been graded. I tried two different types of algorithm: the first was greedy on the actual error in the grade (and thus omniscient), the second was greedy on the submission variance, as calculated by the algorithm. The latter should not have (and did not) have any impact on the results, as submission variance is not captured by our model (see Figure \ref{fig:vancouver-highest-sumbission-variance}). The first algorithm also did not noticeably improve the results (see Figure \ref{fig:vancouver-highest-grade-error}).
+	Following the above examination, I looked into changing the algorithm for selecting submissions to provide ground truth grades for once the cover had already been graded. I tried two different types of algorithm: the first was greedy on the actual error in the grade (and thus omniscient), the second was greedy on the submission variance, as calculated by the algorithm. The latter should not have (and did not) show any improvement over random selection, as submission variance is not captured by our model, which treats all submissions as identical, and therefore the algorithm had nothing but noise to work with. The plot of this is shown in Figure \ref{fig:vancouver-highest-sumbission-variance}. The first algorithm also did not noticeably improve the results (see Figure \ref{fig:vancouver-highest-grade-error}).
 	
 	\begin{figure}[h]
 		\includegraphics{vancouver-highest-grade-error}
