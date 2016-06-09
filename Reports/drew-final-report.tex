@@ -33,7 +33,7 @@
 	
 
 	\section{Initial Verification of Vancouver Algorithm}
-	The first thing to be done was to verify the number of iterations needed for Vancouver to converge to a reasonable output. Ten was hypothesized to be an appropriate number of iterations based on earlier simulations conducted by other members of the research group, and the simulations I conducted support this hypothesis. Figure \ref{fig:vancouver-10-steps} is the graph for ten iterations and Figure \ref{fig:vancouver-20-steps} is the graph for twenty iterations. As you can see, there is no significant difference between them. I have also included the graph for a single iteration, which represents simple averaging, in Figure \ref{fig:vancouver-1-step}. This shows that for the default simulation parameters, simple averaging has comparable performance to Vancouver. All of the plots below were run with the number of Vancouver iterations specified and the remaining settings default as described above.
+	The first thing to be done was to verify the number of iterations needed for Vancouver to converge to a reasonable output. Ten was hypothesized to be an appropriate number of iterations based on earlier simulations conducted by other members of the research group, and the simulations I conducted support this hypothesis. Figure \ref{fig:vancouver-10-steps} is the graph for ten iterations and Figure \ref{fig:vancouver-20-steps} is the graph for twenty iterations. As you can see, there is no significant difference between them. I have also included the graph for a single iteration, which represents simple averaging, in Figure \ref{fig:vancouver-1-step}. A comparison of the different numbers of steps is shown in Figure \ref{fig:vancouver-vs-iterations}. This shows that for the default simulation parameters, simple averaging has comparable performance to Vancouver. Figures \ref{fig:vancouver-10-steps}, \ref{fig:vancouver-20-steps}, and \ref{fig:vancouver-1-step}  were run with the number of Vancouver iterations specified and the remaining settings default as described above. Figure \ref{fig:vancouver-vs-iterations} was run across several values for the number of Vancouver iterations, and five and fifteen ground truths. The similarity at all the various step values can be clearly seen by the degree to which the curves are similar. Figure \ref{fig:vancouver-vs-iterations-2} is included for the skeptic, and shows zero and ten ground truths over the same values for iterations.
 
 	\begin{figure}[h]
 		\includegraphics{vancouver-10-steps.png}
@@ -53,6 +53,18 @@
 		\label{fig:vancouver-1-step}
 	\end{figure}
 	
+	\begin{figure}[h]
+		\includegraphics{vancouver-vs-iterations.png}
+		\caption{Vancouver vs. Iterations at Five and Fifteen Ground Truths}
+		\label{fig:vancouver-vs-iterations}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\includegraphics{vancouver-vs-iterations-2.png}
+		\caption{Vancouver vs. Iterations at Zero and Ten Ground Truths}
+		\label{fig:vancouver-vs-iterations-2}
+	\end{figure}
+	
 
 	\section{Evaluation of Vancouver with Injected Ground Truths}
 	Vancouver does not show better than linear decrease in error, which may be attributable partially or entirely to the linear decrease that is expected simply from adding in more ground truth grades. To understand this, consider that the error for a grade that is a ground-truth grade will always be zero. Therefore, as long as the grades which are not obtained from ground truth have some nonzero expected error $k$, adding one more ground truth grade will reduce the expected total error by $k$ and therefore reduce the expected mean error by $k/n$, where $n$ is the total number of submissions. Clearly, this is a linear decrease in mean error. Figure \ref{fig:vancouver-vs-ground-truth-cover} is a plot of the expected mean error calculated from 100 trials with the other parameters default.
@@ -65,17 +77,18 @@
 	
 
 	\section{Evaluation of Vancouver with Grading a Cover}
-	The simulations up until this point have assumed that a cover should be graded first before subsequent ground truths are chosen randomly, but this was not the initial case. Rather, in my first run of simulations, I chose assignments to inject ground truth for in a uniformly random manner, ignoring the existence of a cover. A plot of this is shown in Figure \ref{fig:vancouver-vs-ground-truth-no-cover}, and does not appear noticeably different from Figure \ref{fig:vancouver-vs-ground-truth-cover}, indicating that there may be little to no benefit of grading a cover first, other than that it allows for grading of the graders. I also include plots of both of their CDFs for comparison to each other in Figures \ref{fig:vancouver-no-cover} and \ref{fig:vancouver-cover-random}. Again, there is no discernible difference between the two figures.
+	The simulations up until this point have assumed that a cover should be graded first before subsequent ground truths are chosen randomly to be fed into the algorithm, but this was not the initial case. Rather, in my first run of simulations, I chose assignments to inject ground truth for in a uniformly random manner, ignoring the existence of a cover. A plot of this is shown in Figure \ref{fig:cover-vs-no-cover}, which compares the two methods. This plot seems to indicate that there may be little to no benefit of grading a cover first, other than that it allows for grading of the graders. I also include plots of both of their CDFs for comparison to each other in Figures \ref{fig:vancouver-no-cover} and \ref{fig:vancouver-cover-random}. Again, there is no discernible difference between the two figures.
 	
+		
 	\begin{figure}[h]
-		\includegraphics{vancouver-vs-ground-truth-no-cover.png}
-		\caption{Vancouver as Number of Ground Truth Grades Increases (No Cover)}
-		\label{fig:vancouver-vs-ground-truth-no-cover}
+		\includegraphics{cover-vs-no-cover.png}end{document}
+		\caption{Comparison of Vancouver With and Without Cover}
+		\label{fig:cover-vs-no-cover}
 	\end{figure}
 	
 	\begin{figure}[h]
-		\includegraphics{vancouver-no-cover.png}end{document}
-		\caption{Vancouver (No Cover)}
+		\includegraphics{vancouver-no-cover.png}
+		\caption{Vancouver (With Cover and Random Selection Past Cover)}
 		\label{fig:vancouver-no-cover}
 	\end{figure}
 	
@@ -87,7 +100,7 @@
 	
 	
 	\section{Attempts to Find a Distribution for Which Ground Truth Injection is Better than Default}
-	I next attempted to find a distribution of grader qualities for which ground truth injection would be more helpful than it is for the default uniform distribution of grader qualities on the set {1, 2, 3, 4, 5}. Distributions that I tried included bimodal (Figure \ref{fig:vancouver-bimodal}) and skewed both low and high (Figures \ref{fig:vancouver-skewed} and \ref{fig:vancouver-skewed-low}). None of these distributions showed noticeable improvements over the default. It is worth noting for the sake of clarity that minor differences in the overall error are visible here, but this is due to the initial input from the graders being better or worse, since I was changing the distribution of quality of the graders.
+	I next attempted to find a distribution of grader qualities for which ground truth injection would be more helpful than it is for the default uniform distribution of grader qualities on the set {1, 2, 3, 4, 5}. Distributions that I tried included bimodal (Figure \ref{fig:vancouver-bimodal}) and skewed both low and high (Figures \ref{fig:vancouver-skewed} and \ref{fig:vancouver-skewed-low}). None of these distributions showed noticeable improvements over the default. It is worth noting for the sake of clarity that minor differences in the overall error are visible here, but this is due to the initial input from the graders being better or worse, since I was changing the distribution of quality of the graders. A comparison of these at five, ten, and fifteen ground truths can be seen in Figures \ref{fig:vancouver-distribs-5}, \ref{fig:vancouver-distribs-10}, and \ref{fig:vancouver-distribs-15}, respectively. I have also, at the suggestion of a colleague for his best parameters for Vancouver, included the peer quality set \{1, 1000\}. From these plots it is clear that superior graders make for superior grades in the end. In the case where some graders are better than other graders by a phenomenal amount, Vancouver does exceptionally well.
 	
 	\begin{figure}[h]
 		\includegraphics{vancouver-bimodal.png}
@@ -107,9 +120,26 @@
 		\label{fig:vancouver-skewed-low}
 	\end{figure}
 	
+	\begin{figure}[h]
+		\includegraphics{vancouver-distribs-5.png}
+		\caption{Vancouver with Varied Peer Quality Distributions, 5 Ground Truths}
+		\label{fig:vancouver-distribs-5}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\includegraphics{vancouver-distribs-10.png}
+		\caption{Vancouver with Varied Peer Quality Distributions, 10 Ground Truths}
+		\label{fig:vancouver-distribs-10}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\includegraphics{vancouver-distribs-15.png}
+		\caption{Vancouver with Varied Peer Quality Distributions, 15 Ground Truths}
+		\label{fig:vancouver-distribs-15}
+	\end{figure}
 	
 	\section{Algorithms for Grading Past the Cover}
-	Following the above examination, I looked into changing the algorithm for selecting submissions to provide ground truth grades for once the cover had already been graded. I tried two different types of algorithm: the first was greedy on the actual error in the grade (and thus omniscient), the second was greedy on the submission variance, as calculated by the algorithm. The latter should not have (and did not) show any improvement over random selection, as submission variance is not captured by our model, which treats all submissions as identical, and therefore the algorithm had nothing but noise to work with. The plot of this is shown in Figure \ref{fig:vancouver-highest-sumbission-variance}. The first algorithm also did not noticeably improve the results (see Figure \ref{fig:vancouver-highest-grade-error}).
+	Following the above examination, I looked into changing the algorithm for selecting submissions to provide ground truth grades for once the cover had already been graded. I tried two different types of algorithm: the first was greedy on the actual error in the grade (and thus omniscient), the second was greedy on the submission variance, as calculated by the algorithm. The latter should not have (and did not) show any improvement over random selection, as submission variance is not captured by our model, which treats all submissions as identical, and therefore the algorithm had nothing but noise to work with. The plot of this is shown in Figure \ref{fig:vancouver-highest-sumbission-variance}. The first algorithm also did not noticeably improve the results (see Figure \ref{fig:vancouver-highest-grade-error}). A comparison of all three algorithms (including the random baseline) is shown for various values of ground truth in Figures \ref{fig:alg-comparison-10} and \ref{fig:alg-comparison-15}. This shows that for the default simulation parameters they are nearly identical.
 	
 	\begin{figure}[h]
 		\includegraphics{vancouver-highest-grade-error}
@@ -123,9 +153,21 @@
 		\label{fig:vancouver-highest-sumbission-variance}
 	\end{figure}
 	
+	\begin{figure}[h]
+		\includegraphics{alg-comparison-10}
+		\caption{Vancouver with Various Algorithms, Ten Ground Truths}
+		\label{fig:alg-comparison-10}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\includegraphics{alg-comparison-15}
+		\caption{Vancouver with Various Algorithms, Fifteen Ground Truths}
+		\label{fig:alg-comparison-15}
+	\end{figure}
+	
 	
 	\section{Conclusion}
-	Based on the results of these simulations, it does not appear that Vancouver's performance can be increased better than linearly by any of the methods for ground-truth-injection which were attempted. In fact, it appears that for these simulation parameters, Vancouver does not noticeably outperform simple averaging with ground-truth injection. It is known from results obtained by other members of the research group that Vancouver does begin to outperform simple averaging at large enough sample sizes; a possible future direction for research could be to re-run these simulations using larger sample sizes. A limited subset of these simulations was run with larger sample sizes and appeared to show no change, which is why such a direction was not pursued in this experiment. 
+	Based on the results of these simulations, it does not appear that Vancouver's performance can be increased better than linearly by any of the methods for ground-truth-injection which were attempted. In fact, it appears that for these simulation parameters, Vancouver does not noticeably outperform simple averaging with ground-truth injection. Tangential results obtained by other members of the research group suggest that Vancouver does begin to outperform simple averaging at large enough sample sizes; however, these results were not run using comparable parameters and involved holding the number of students constant while the number of submissions increased to infinity, so they offer little bearing on this research. A possible future direction for research could be to re-run these simulations using larger sample sizes. A limited subset of these simulations was run with larger sample sizes and appeared to show no change, which is why such a direction was not pursued in this experiment. 
 	
 	In addition, it is worth noting that the injection of ground truth may simply outweigh any differences in the algorithms used for obtaining the non-ground-truth grades, since ground truth so powerfully affects the average error.
 	

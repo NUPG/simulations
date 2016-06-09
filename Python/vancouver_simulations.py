@@ -167,3 +167,110 @@ def plot_cdfs(num_subs=20, num_grades_per_sub=3, num_truths=(0, 5, 10, 15), peer
     plt.ylabel('Normalized CDF')
     plt.xlim(xrange)
     plt.show()
+
+
+def plot_cdfs_2(num_subs=20, num_grades_per_sub=3, num_truths=(10,), peer_quality=(random.randint, 1, 5),
+                use_cover=True, vancouver_steps=(1, 10, 20), stat_type='Submission Grade Error', num_trials=50,
+                grading_algorithm=lambda x: random.choice(x[0]), resolution=100, xrange=[0, 0.4]):
+    """
+    Allows plotting of multiple Vancouver iterations at once.
+    :return:
+    """
+    legend = []
+    for vs in vancouver_steps:
+        for truth_num in num_truths:
+            vancouver_bulk = []
+            for _ in range(num_trials):
+                vancouver_bulk.extend(evaluate_vancouver(num_subs, num_grades_per_sub, truth_num,
+                                                         peer_quality, use_cover, vs,
+                                                         grading_algorithm=grading_algorithm)[stat_ids[stat_type]])
+            vancouver_bulk.sort()
+            vmin = vancouver_bulk[0]
+            vmax = vancouver_bulk[-1]
+            step = (vmax - vmin) / resolution
+            hist = []
+            values = []
+            i = 0
+            for value in np.arange(vmin, vmax, step):
+                while vancouver_bulk[i] < value:
+                    i += 1
+                hist.append(i)
+                values.append(value)
+            hist_max = hist[-1]
+            hist = [float(item) / hist_max for item in hist]
+            plt.plot(values, hist)
+            legend.append(str(vs) + ' Steps, ' + str(truth_num) + ' True Grades')
+    plt.legend(legend, loc=4)
+    plt.xlabel(stat_type)
+    plt.ylabel('Normalized CDF')
+    plt.xlim(xrange)
+    plt.show()
+    return
+
+
+def plot_cdfs_3(num_subs=20, num_grades_per_sub=3, num_truths=(0,), peer_quality=(random.randint, 1, 5),
+                use_cover=True, vancouver_steps=10, stat_type='Submission Grade Error', num_trials=50,
+                algs=(lambda x: random.choice(x[0]), ), alg_names=('Random', ), resolution=100, xrange=[0, 0.4]):
+    legend=[]
+    for j, grading_algorithm in enumerate(algs):
+        for truth_num in num_truths:
+            vancouver_bulk = []
+            for _ in range(num_trials):
+                vancouver_bulk.extend(evaluate_vancouver(num_subs, num_grades_per_sub, truth_num,
+                                                         peer_quality, use_cover, vancouver_steps,
+                                                         grading_algorithm=grading_algorithm)[stat_ids[stat_type]])
+            vancouver_bulk.sort()
+            vmin = vancouver_bulk[0]
+            vmax = vancouver_bulk[-1]
+            step = (vmax - vmin) / resolution
+            hist = []
+            values = []
+            i = 0
+            for value in np.arange(vmin, vmax, step):
+                while vancouver_bulk[i] < value:
+                    i += 1
+                hist.append(i)
+                values.append(value)
+            hist_max = hist[-1]
+            hist = [float(item) / hist_max for item in hist]
+            plt.plot(values, hist)
+            legend.append(alg_names[j] + ', ' + str(truth_num) + ' Ground Truths')
+    plt.legend(legend, loc=4)
+    plt.xlabel(stat_type)
+    plt.ylabel('Normalized CDF')
+    plt.xlim(xrange)
+    plt.show()
+
+
+def plot_cdfs_4(num_subs=20, num_grades_per_sub=3, num_truths=(0,), peer_qualities=((random.randint, 1, 5),),
+                use_cover=True, vancouver_steps=10, stat_type='Submission Grade Error', num_trials=50,
+                grading_algorithm=lambda x: random.choice(x[0]), pq_names=('Random on {1,2,3,4,5}',), resolution=100, xrange=[0, 0.4]):
+    legend = []
+    for j, peer_quality in enumerate(peer_qualities):
+        for truth_num in num_truths:
+            vancouver_bulk = []
+            for _ in range(num_trials):
+                vancouver_bulk.extend(evaluate_vancouver(num_subs, num_grades_per_sub, truth_num,
+                                                         peer_quality, use_cover, vancouver_steps,
+                                                         grading_algorithm=grading_algorithm)[stat_ids[stat_type]])
+            vancouver_bulk.sort()
+            vmin = vancouver_bulk[0]
+            vmax = vancouver_bulk[-1]
+            step = (vmax - vmin) / resolution
+            hist = []
+            values = []
+            i = 0
+            for value in np.arange(vmin, vmax, step):
+                while vancouver_bulk[i] < value:
+                    i += 1
+                hist.append(i)
+                values.append(value)
+            hist_max = hist[-1]
+            hist = [float(item) / hist_max for item in hist]
+            plt.plot(values, hist)
+            legend.append(pq_names[j] + ', ' + str(truth_num) + ' Truths')
+    plt.legend(legend, loc=4)
+    plt.xlabel(stat_type)
+    plt.ylabel('Normalized CDF')
+    plt.xlim(xrange)
+    plt.show()
