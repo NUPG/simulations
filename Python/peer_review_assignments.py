@@ -5,16 +5,10 @@
 
 import random
 import math
+import numpy as np
 
-# invert a dictionary of lists (assuming no duplicates)
-def invert_dictlist(d):
-    return dict( (v,k) for k in d for v in d[k] )
+from peer_review_util import *
 
-# invert a dictionary of lists (with duplicates)
-def invert_dictlist_dup(d):
-    values = set(a for b in d.values() for a in b)
-    reverse_d = dict((new_key, [key for key,value in d.items() if new_key in value]) for new_key in values)
-    return reverse_d
 
 
 # In[2]:
@@ -206,3 +200,23 @@ def check_assignment(groups,assignments):
             passed = False
             
     return passed
+
+
+# generates random reviews for assignments 
+#    (assignments as returned from peer_assignments())
+#   qualities: {i => number of draws from distribituion}
+def random_reviews(assignments, qualities = {}):
+    # fill in qualities if empty.
+    # default quality is 1.
+    if len(qualities.keys()) < 1:
+        qs = {i: 1 for i in assignments.keys()}
+        qs.update(qualities)
+        qualities = qs;
+        
+    # Uniform reviews
+    #reviews = {i: {j: np.mean([random.random() for _ in range(qualities[i])]) for j in js} for (i, js) in assignments.items()} 
+    
+    # Binomial reviews
+    reviews = {i : {j: np.random.binomial(qualities[i],0.5)/qualities[i] for j in js} for (i,js) in assignments.items()}
+    
+    return reviews
