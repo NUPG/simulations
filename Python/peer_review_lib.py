@@ -1,3 +1,10 @@
+import math 
+import random
+
+#note this will only work on hashable objects
+def duplicates(tocheck):
+  return len(tocheck) != len(set(tocheck))
+
 ####
 # GENERATE PEER ASSIGNMENT
 # Input:
